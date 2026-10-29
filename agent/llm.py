@@ -33,8 +33,8 @@ class LLMClient:
         if self.groq_key:
             try:
                 from groq import Groq
-                self._groq_client = Groq(api_key=self.groq_key)
-                logger.info("Initialized Groq LLM client")
+                self._groq_client = Groq(api_key=self.groq_key, max_retries=0)
+                logger.info("Initialized Groq LLM client (fast failover)")
             except Exception as e:
                 logger.warning(f"Failed to initialize Groq: {e}")
 
@@ -63,7 +63,7 @@ class LLMClient:
 
         # Try Groq
         if self._groq_client:
-            models_to_try = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
+            models_to_try = ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"]
             for model_id in models_to_try:
                 try:
                     messages = []
