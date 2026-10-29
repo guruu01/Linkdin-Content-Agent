@@ -1,0 +1,33 @@
+# Environment variables and secrets (NEVER COMMIT)
+.env
+*.env
+.env.*
+!*.env.example
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Local database and generated files
+data/*.db
+data/*.sqlite
+data/*.xlsx
+!data/.gitkeep
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

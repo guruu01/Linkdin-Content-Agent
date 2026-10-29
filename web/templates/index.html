@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Social Media Content Agent | LinkedIn Command Center</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        linkedin: {
+                            blue: '#0A66C2',
+                            dark: '#004182',
+                            light: '#E8F3FC',
+                            bg: '#F3F2EF',
+                            border: '#E0E0E0'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        .post-content-preview {
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased min-h-screen flex flex-col" x-data="agentDashboard()">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Brand -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-linkedin-dark to-linkedin-blue flex items-center justify-center text-white text-xl shadow-md shadow-blue-500/20">
+                    <i class="fa-brands fa-linkedin-in"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-base sm:text-lg text-slate-900 leading-tight">LinkedIn Content Agent</h1>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1"></span> Live
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 hidden sm:block">Automated Industry Research, Viral Drafting & Publishing</p>
+                </div>
+            </div>
+
+            <!-- Top Actions & Schedule -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <div class="hidden lg:flex items-center bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600">
+                    <i class="fa-regular fa-clock text-blue-600 mr-2"></i>
+                    <span>Schedule: <strong class="text-slate-800">{{ integrations.schedule }}</strong></span>
+                </div>
+
+                <a href="/api/calendar/download" class="inline-flex items-center text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 px-3 py-2 rounded-lg shadow-sm transition">
+                    <i class="fa-solid fa-file-excel text-emerald-600 mr-1.5"></i>
+                    <span class="hidden sm:inline">Export</span> Excel
+                </a>
+
+                <button @click="triggerWorkflow()" :disabled="runningWorkflow" class="inline-flex items-center text-xs font-semibold text-white bg-linkedin-blue hover:bg-linkedin-dark px-4 py-2 rounded-lg shadow-md shadow-blue-600/20 transition disabled:opacity-50">
+                    <i class="fa-solid fa-bolt mr-1.5" :class="{'fa-spin': runningWorkflow}"></i>
+                    <span x-text="runningWorkflow ? 'Running Workflow...' : 'Run Monday Batch'"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- Live System Status & Quick Summary Banner -->
+        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 mb-8 text-white shadow-xl relative overflow-hidden border border-slate-700">
+            <!-- Decorative light overlay -->
+            <div class="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <div class="inline-flex items-center gap-1.5 bg-blue-500/20 text-blue-300 text-xs font-semibold px-2.5 py-1 rounded-full mb-2 border border-blue-400/20">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Autonomous AI Content Engine
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white mb-1">
+                        LinkedIn Content Command Center
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                        Researches breaking AI & PM developments, drafts 5 viral-format posts, syncs to Google Sheets & Notion, and delivers a 1-click WhatsApp review digest.
+                    </p>
+                </div>
+
+                <!-- Fast Action Pills -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button @click="sendWhatsAppDigest()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-900/30">
+                        <i class="fa-brands fa-whatsapp text-sm"></i>
+                        <span>WhatsApp Review</span>
+                    </button>
+                    <button @click="activeTab = 'research'" class="text-xs bg-slate-700/80 hover:bg-slate-700 text-white font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-2 border border-slate-600">
+                        <i class="fa-solid fa-satellite-dish text-blue-400"></i>
+                        <span>Explore Trends</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Connected Services Quick Bar (Protected, No Private Keys) -->
+            <div class="mt-6 pt-5 border-t border-slate-700/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+                <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="text-slate-300">AI: <strong>Groq Active</strong></span>
+                </div>
+                <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="text-slate-300">Sheets: <strong>Live Webhook</strong></span>
+                </div>
+                <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="text-slate-300">Notion: <strong>Connected</strong></span>
+                </div>
+                <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="text-slate-300">WhatsApp: <strong>{{ integrations.whatsapp_preview }}</strong></span>
+                </div>
+                <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="text-slate-300">Calendar: <strong>Excel Sync</strong></span>
+                </div>
+                <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="text-slate-300">Publisher: <strong>1-Click Intent</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:border-slate-300 transition">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Drafts</p>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1" x-text="metrics.total">{{ metrics.total }}</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:border-amber-300 transition cursor-pointer" @click="filterStatus = 'needs_review'">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Needs Review</p>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1" x-text="metrics.needs_review">{{ metrics.needs_review }}</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:border-emerald-300 transition cursor-pointer" @click="filterStatus = 'approved'">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Approved</p>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1" x-text="metrics.approved">{{ metrics.approved }}</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between hover:border-purple-300 transition cursor-pointer" @click="filterStatus = 'published'">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Published</p>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-purple-600 mt-1" x-text="metrics.published">{{ metrics.published }}</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                    <i class="fa-brands fa-linkedin-in"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="border-b border-slate-200 mb-6 bg-white rounded-xl px-4 py-1 border shadow-sm">
+            <nav class="flex space-x-2 sm:space-x-8 overflow-x-auto">
+                <button @click="activeTab = 'posts'" :class="{'border-linkedin-blue text-linkedin-blue font-bold': activeTab === 'posts', 'border-transparent text-slate-500 hover:text-slate-800': activeTab !== 'posts'}" class="whitespace-nowrap py-3.5 px-2 border-b-2 text-xs sm:text-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-newspaper text-sm"></i>
+                    Content Studio & Queue
+                </button>
+                <button @click="activeTab = 'research'" :class="{'border-linkedin-blue text-linkedin-blue font-bold': activeTab === 'research', 'border-transparent text-slate-500 hover:text-slate-800': activeTab !== 'research'}" class="whitespace-nowrap py-3.5 px-2 border-b-2 text-xs sm:text-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-satellite-dish text-sm"></i>
+                    Trend & Topic Radar
+                </button>
+                <button @click="activeTab = 'repurpose'" :class="{'border-linkedin-blue text-linkedin-blue font-bold': activeTab === 'repurpose', 'border-transparent text-slate-500 hover:text-slate-800': activeTab !== 'repurpose'}" class="whitespace-nowrap py-3.5 px-2 border-b-2 text-xs sm:text-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-repeat text-sm"></i>
+                    Article Repurposer
+                </button>
+                <button @click="activeTab = 'integrations'" :class="{'border-linkedin-blue text-linkedin-blue font-bold': activeTab === 'integrations', 'border-transparent text-slate-500 hover:text-slate-800': activeTab !== 'integrations'}" class="whitespace-nowrap py-3.5 px-2 border-b-2 text-xs sm:text-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-shield-halved text-sm"></i>
+                    Connected Integrations
+                </button>
+            </nav>
+        </div>
+
+        <!-- TAB 1: CONTENT STUDIO & QUEUE -->
+        <div x-show="activeTab === 'posts'" x-cloak class="space-y-6">
+
+            <!-- Filter & Search Toolbar -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                
+                <!-- Status Pills -->
+                <div class="flex items-center space-x-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                    <button @click="filterStatus = 'all'" :class="{'bg-slate-900 text-white font-semibold': filterStatus === 'all', 'bg-slate-100 text-slate-600 hover:bg-slate-200': filterStatus !== 'all'}" class="px-3.5 py-1.5 rounded-lg text-xs transition">
+                        All (<span x-text="posts.length"></span>)
+                    </button>
+                    <button @click="filterStatus = 'needs_review'" :class="{'bg-amber-600 text-white font-semibold': filterStatus === 'needs_review', 'bg-amber-50 text-amber-700 hover:bg-amber-100': filterStatus !== 'needs_review'}" class="px-3.5 py-1.5 rounded-lg text-xs transition">
+                        Needs Review (<span x-text="metrics.needs_review"></span>)
+                    </button>
+                    <button @click="filterStatus = 'approved'" :class="{'bg-emerald-600 text-white font-semibold': filterStatus === 'approved', 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100': filterStatus !== 'approved'}" class="px-3.5 py-1.5 rounded-lg text-xs transition">
+                        Approved (<span x-text="metrics.approved"></span>)
+                    </button>
+                    <button @click="filterStatus = 'published'" :class="{'bg-purple-600 text-white font-semibold': filterStatus === 'published', 'bg-purple-50 text-purple-700 hover:bg-purple-100': filterStatus !== 'published'}" class="px-3.5 py-1.5 rounded-lg text-xs transition">
+                        Published (<span x-text="metrics.published"></span>)
+                    </button>
+                </div>
+
+                <!-- Search Input -->
+                <div class="relative w-full sm:w-72">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                    <input type="text" x-model="searchFilter" placeholder="Filter by keyword or topic..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-linkedin-blue bg-slate-50">
+                </div>
+            </div>
+
+            <!-- Posts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <template x-for="post in filteredPosts()" :key="post.id">
+                    <div :id="'post-card-' + post.id"
+                         :class="{'ring-2 ring-blue-500 shadow-xl scale-[1.01] transition-all duration-500': newlyCreatedPostId === post.id}"
+                         class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden group">
+                        
+                        <!-- Card Header -->
+                        <div class="p-5 border-b border-slate-100">
+                            <div class="flex items-center justify-between mb-2.5">
+                                <span class="text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+                                    :class="{
+                                        'bg-amber-100 text-amber-800 border border-amber-200': post.status === 'needs_review',
+                                        'bg-emerald-100 text-emerald-800 border border-emerald-200': post.status === 'approved',
+                                        'bg-purple-100 text-purple-800 border border-purple-200': post.status === 'published'
+                                    }"
+                                    x-text="post.status.replace('_', ' ')">
+                                </span>
+                                <span class="text-xs text-slate-400 font-medium" x-text="formatDate(post.created_at)"></span>
+                            </div>
+                            <h3 class="font-bold text-base text-slate-900 group-hover:text-linkedin-blue transition-colors line-clamp-2 leading-snug" x-text="post.topic"></h3>
+                            <div class="mt-1.5 flex items-center gap-2">
+                                <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100" x-text="post.angle"></span>
+                                <span class="text-[11px] text-slate-400 font-mono" x-text="post.character_count + ' chars'"></span>
+                            </div>
+
+                            <!-- Source Context & Live Article Link -->
+                            <div class="mt-3 flex items-center justify-between text-[11px] bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/90">
+                                <span class="text-slate-600 truncate flex items-center gap-1.5 min-w-0">
+                                    <i class="fa-solid fa-satellite-dish text-blue-500 text-[10px] shrink-0"></i>
+                                    <span class="text-slate-400 font-normal">Context:</span>
+                                    <span class="font-medium text-slate-800 truncate" x-text="post.topic"></span>
+                                </span>
+                                <a :href="getPostSourceUrl(post)" target="_blank" class="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 shrink-0 hover:underline ml-2">
+                                    Source Coverage <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Hook Highlight Callout -->
+                        <div class="p-4 bg-slate-50/80 border-b border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                <i class="fa-solid fa-angles-right text-blue-500"></i> Hook (Above-the-Fold Cutoff):
+                            </p>
+                            <p class="text-xs sm:text-sm font-semibold text-slate-800 italic" x-text="'\"' + post.hook + '...\"'"></p>
+                        </div>
+
+                        <!-- Body Content Snippet -->
+                        <div class="p-5 flex-1">
+                            <div class="post-content-preview text-xs text-slate-700 bg-white p-3.5 rounded-xl border border-slate-100 max-h-44 overflow-y-auto leading-relaxed shadow-inner" x-text="post.content"></div>
+                            
+                            <div class="mt-3">
+                                <p class="text-[11px] font-semibold text-linkedin-blue" x-text="post.hashtags"></p>
+                            </div>
+                        </div>
+
+                        <!-- Card Action Buttons -->
+                        <div class="p-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center space-x-2">
+                                <button @click="openSimulator(post)" class="text-xs font-semibold text-linkedin-blue hover:text-linkedin-dark px-3 py-2 rounded-lg border border-linkedin-blue/30 hover:bg-blue-50 transition flex items-center gap-1.5 bg-white shadow-sm">
+                                    <i class="fa-regular fa-eye"></i>
+                                    <span>Preview Simulator</span>
+                                </button>
+                                <button @click="openStudio(post)" class="text-xs text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg border border-slate-300 hover:bg-white transition flex items-center gap-1.5 bg-slate-100">
+                                    <i class="fa-solid fa-sliders"></i>
+                                    <span>Studio Editor</span>
+                                </button>
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                <template x-if="post.status !== 'approved' && post.status !== 'published'">
+                                    <button @click="updateStatus(post.id, 'approved')" class="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                                        <i class="fa-solid fa-check"></i> <span>Approve</span>
+                                    </button>
+                                </template>
+                                
+                                <button @click="publishToLinkedIn(post)" class="text-xs font-semibold bg-linkedin-blue hover:bg-linkedin-dark text-white px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm shadow-blue-500/20">
+                                    <i class="fa-solid fa-share-from-square"></i> <span>Publish</span>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- TAB 2: TREND & TOPIC RADAR -->
+        <div x-show="activeTab === 'research'" x-cloak class="space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-satellite-dish text-blue-600"></i>
+                            Live Industry Trend Radar
+                        </h2>
+                        <p class="text-xs text-slate-500">Monitors live Google News RSS, Hacker News, and TechCrunch discussions to extract controversial debates & hooks.</p>
+                    </div>
+
+                    <!-- Preset topic tags -->
+                    <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                        <button @click="searchQuery = 'Agentic AI in Product Management'; performResearch()" class="bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 px-2.5 py-1 rounded-full border border-slate-200 transition">Agentic AI</button>
+                        <button @click="searchQuery = 'AI Code Assistants Cursor and Claude Code'; performResearch()" class="bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 px-2.5 py-1 rounded-full border border-slate-200 transition">Code Assistants</button>
+                        <button @click="searchQuery = 'SaaS Churn and AI Feature Bloat'; performResearch()" class="bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 px-2.5 py-1 rounded-full border border-slate-200 transition">Feature Bloat</button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <input type="text" x-model="searchQuery" placeholder="Enter topic query..." class="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-linkedin-blue bg-slate-50">
+                    <button @click="performResearch()" :disabled="researching" class="bg-linkedin-blue hover:bg-linkedin-dark text-white text-xs font-semibold px-6 py-2.5 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-magnifying-glass" :class="{'fa-spin': researching}"></i>
+                        <span x-text="researching ? 'Analyzing Signals...' : 'Analyze Trends'"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Researched Trends Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <template x-for="t in topics" :key="t.id || t.title">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-100" x-text="t.source"></span>
+                                <span class="text-xs font-extrabold text-amber-600 flex items-center gap-1 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-100">
+                                    <i class="fa-solid fa-fire text-amber-500"></i> <span x-text="t.trending_score"></span>/10 Score
+                                </span>
+                            </div>
+                            <h3 class="font-bold text-sm sm:text-base text-slate-900 mb-2 leading-snug" x-text="t.title"></h3>
+                            <p class="text-xs text-slate-600 mb-4 leading-relaxed" x-text="t.summary"></p>
+
+                            <!-- Debate Controversy Points -->
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Key Discussion & Tension Points:</p>
+                                <ul class="text-xs text-slate-700 space-y-1.5">
+                                    <template x-for="pt in (t.discussion_points || [])" :key="pt">
+                                        <li class="flex items-start gap-2">
+                                            <span class="text-blue-500 font-bold leading-none mt-1">•</span>
+                                            <span x-text="pt" class="leading-relaxed"></span>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                            <a :href="getArticleUrl(t)" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-semibold">
+                                Source Article <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                            <button @click="draftFromTopic(t)" :disabled="draftingTopicId === (t.id || t.title)" class="text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-60 px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid" :class="draftingTopicId === (t.id || t.title) ? 'fa-spinner fa-spin' : 'fa-pen-nib'"></i>
+                                <span x-text="draftingTopicId === (t.id || t.title) ? 'Drafting...' : 'Draft Post'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- TAB 3: ARTICLE REPURPOSER STUDIO -->
+        <div x-show="activeTab === 'repurpose'" x-cloak class="space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-repeat"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Long Article to Multi-Format Repurposer</h2>
+                        <p class="text-xs text-slate-500">Turns any blog post, newsletter, or URL into 1) A Standalone Post, 2) A PDF Carousel Outline, and 3) A 3-Day Mini-Series.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 mt-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Article or Blog URL:</label>
+                        <input type="text" x-model="repurposeUrl" placeholder="https://techcrunch.com/article/ai-agents-in-production" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Or Paste Full Content / Newsletter / Video Transcript:</label>
+                        <textarea x-model="repurposeText" rows="4" placeholder="Paste article text here..." class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50"></textarea>
+                    </div>
+
+                    <button @click="performRepurpose()" :disabled="repurposing" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-6 py-2.5 rounded-xl transition disabled:opacity-50 flex items-center gap-2 shadow-md shadow-indigo-600/20">
+                        <i class="fa-solid fa-wand-magic-sparkles" :class="{'fa-spin': repurposing}"></i>
+                        <span x-text="repurposing ? 'Repurposing Article...' : 'Transform into LinkedIn Formats'"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Repurpose Results -->
+            <div x-show="repurposeResult" class="space-y-6">
+                
+                <!-- Format 1: Standalone Post -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold text-white bg-blue-600 px-3 py-1 rounded-full uppercase tracking-wider">Format 1: Standalone LinkedIn Post</span>
+                        <button @click="copyToClipboard(repurposeResult.post_content)" class="text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-300 px-3 py-1.5 rounded-lg bg-slate-50">
+                            <i class="fa-regular fa-copy"></i> Copy Post
+                        </button>
+                    </div>
+                    <div class="post-content-preview text-xs text-slate-800 bg-slate-50 p-4 rounded-xl border border-slate-200" x-text="repurposeResult.post_content"></div>
+                </div>
+
+                <!-- Format 2: Carousel PDF Slides -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <div class="mb-4">
+                        <span class="text-xs font-bold text-white bg-amber-600 px-3 py-1 rounded-full uppercase tracking-wider">Format 2: Document Carousel Outline (5-7 Slides)</span>
+                        <p class="text-xs text-slate-500 mt-1">Copy and paste these slide titles and designer prompts directly into Canva, Figma, or PowerPoint:</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <template x-for="slide in (repurposeResult.carousel_slides || [])" :key="slide.slide_number">
+                            <div class="bg-slate-900 text-white p-5 rounded-2xl shadow flex flex-col justify-between border border-slate-700">
+                                <div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-[11px] font-bold text-amber-400" x-text="'Slide #' + slide.slide_number"></span>
+                                        <span class="text-[10px] text-slate-400 font-mono">PDF Slide</span>
+                                    </div>
+                                    <h4 class="font-bold text-sm mb-2 text-white" x-text="slide.title"></h4>
+                                    <p class="text-xs text-slate-300 whitespace-pre-line mb-4 leading-relaxed" x-text="slide.body"></p>
+                                </div>
+                                <div class="bg-slate-800/90 p-2.5 rounded-xl text-[10px] text-amber-300 border border-slate-700">
+                                    <i class="fa-solid fa-palette mr-1"></i> Visual Note: <span x-text="slide.visual_cue"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Format 3: 3-Day Mini-Series -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <span class="text-xs font-bold text-white bg-purple-600 px-3 py-1 rounded-full uppercase tracking-wider mb-4 inline-block">Format 3: 3-Day Sequential Mini-Series</span>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <template x-for="item in (repurposeResult.mini_series || [])" :key="item.day">
+                            <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl flex flex-col justify-between">
+                                <div>
+                                    <div class="text-xs font-bold text-purple-700 mb-2" x-text="'Day ' + item.day + ': ' + item.theme"></div>
+                                    <p class="text-xs text-slate-700 whitespace-pre-line leading-relaxed" x-text="item.content"></p>
+                                </div>
+                                <div class="mt-4 text-right">
+                                    <button @click="copyToClipboard(item.content)" class="text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-300 px-3 py-1.5 rounded-lg bg-white">
+                                        <i class="fa-regular fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TAB 4: CONNECTED INTEGRATIONS & SECURITY HUB (ZERO SENSITIVE DATA EXPOSED) -->
+        <div x-show="activeTab === 'integrations'" x-cloak class="space-y-6">
+
+            <!-- Security Banner -->
+            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-5 flex items-start gap-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-blue-900">Zero-Exposure Security Guarantee</h3>
+                    <p class="text-xs text-blue-700 mt-1 leading-relaxed">
+                        All sensitive credentials, API keys, and database secrets are stored securely in your local environment file (<code class="font-mono bg-blue-100 px-1 py-0.5 rounded">.env</code>). They are never transmitted to client browsers, third-party trackers, or public web interfaces.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Service Status Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Groq AI Service -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                                    <i class="fa-solid fa-brain"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-slate-900">Groq AI Engine</h4>
+                                    <p class="text-xs text-slate-500">Ultra-Fast Llama-3.3 / GPT-OSS</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span> Connected
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Powers your research synthesis, viral hook generation, and full post drafting. Active model: <strong>openai/gpt-oss-120b</strong>.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-1.5">
+                        <i class="fa-solid fa-lock text-slate-400"></i> Server-side authentication active
+                    </div>
+                </div>
+
+                <!-- Google Sheets Service -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-xl">
+                                    <i class="fa-solid fa-file-excel"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-slate-900">Google Sheets Sync</h4>
+                                    <p class="text-xs text-slate-500">Live Cloud Webhook Integration</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span> Connected
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Automatically appends every weekly draft with columns for Topic, Angle, Hook, Full Content, and Status directly to your Google Sheet.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xs text-slate-500"><i class="fa-solid fa-cloud-arrow-up text-emerald-600 mr-1"></i> Apps Script Webhook</span>
+                        <a href="/api/calendar/download" class="text-xs font-semibold text-linkedin-blue hover:underline">Download Local Excel</a>
+                    </div>
+                </div>
+
+                <!-- Notion Service -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                                    <i class="fa-solid fa-book"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-slate-900">Notion Workspace</h4>
+                                    <p class="text-xs text-slate-500">Database Page Creator</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span> Connected
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Syncs your 5 weekly posts directly into your Notion database with formatted callout blocks for the Hook and paragraph blocks for content.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-1.5">
+                        <i class="fa-solid fa-check text-emerald-600"></i> Internal Integration Secret active
+                    </div>
+                </div>
+
+                <!-- WhatsApp Service -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                                    <i class="fa-brands fa-whatsapp"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-slate-900">WhatsApp Review Alert</h4>
+                                    <p class="text-xs text-slate-500">1-Click Direct Review & Approval</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span> Configured
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Sends formatted digests with preview hooks and review links to your number (<strong class="text-slate-800">{{ integrations.whatsapp_preview }}</strong>).
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <button @click="sendWhatsAppDigest()" class="text-xs font-semibold text-emerald-700 hover:text-emerald-900 flex items-center gap-1">
+                            <i class="fa-brands fa-whatsapp"></i> Send Review Digest Now
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- LIVE LINKEDIN FEED SIMULATOR MODAL (AUTHENTIC LINKEDIN UI) -->
+    <div x-show="showSimulator" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/70 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in duration-150" @click.away="showSimulator = false">
+            
+            <!-- Modal Header with View Mode Switcher -->
+            <div class="p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded-full bg-red-400"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                    </div>
+                    <span class="text-xs font-bold text-slate-700 ml-1">LinkedIn Feed Simulator</span>
+                </div>
+
+                <!-- Desktop / Mobile Toggle -->
+                <div class="flex items-center bg-white border border-slate-300 rounded-lg p-0.5 text-xs">
+                    <button @click="simMode = 'desktop'" :class="{'bg-slate-900 text-white font-semibold': simMode === 'desktop', 'text-slate-600': simMode !== 'desktop'}" class="px-2.5 py-1 rounded-md transition flex items-center gap-1">
+                        <i class="fa-solid fa-desktop text-[10px]"></i> Desktop
+                    </button>
+                    <button @click="simMode = 'mobile'" :class="{'bg-slate-900 text-white font-semibold': simMode === 'mobile', 'text-slate-600': simMode !== 'mobile'}" class="px-2.5 py-1 rounded-md transition flex items-center gap-1">
+                        <i class="fa-solid fa-mobile-screen text-[10px]"></i> Mobile
+                    </button>
+                </div>
+
+                <button @click="showSimulator = false" class="text-slate-400 hover:text-slate-700 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Authentic LinkedIn Post Card -->
+            <div class="p-6 bg-white overflow-y-auto max-h-[75vh]" :class="{'max-w-md mx-auto border-x border-slate-200': simMode === 'mobile'}">
+                
+                <!-- Post Origin Context Badge -->
+                <div class="mb-4 flex items-center justify-between text-[11px] bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
+                    <span class="text-slate-600 truncate flex items-center gap-1.5 min-w-0">
+                        <i class="fa-solid fa-satellite-dish text-blue-500 text-[10px] shrink-0"></i>
+                        <span class="text-slate-400 font-normal">Derived from Trend:</span>
+                        <span class="font-semibold text-slate-800 truncate" x-text="activePost?.topic"></span>
+                    </span>
+                    <a :href="getPostSourceUrl(activePost)" target="_blank" class="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 shrink-0 hover:underline ml-2">
+                        Source Coverage <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                    </a>
+                </div>
+
+                <!-- Author Header -->
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-700 to-indigo-700 text-white flex items-center justify-center font-bold text-base shadow">
+                            PM
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1">
+                                <h4 class="font-bold text-sm text-slate-900 hover:text-linkedin-blue cursor-pointer">Your Profile</h4>
+                                <span class="text-slate-400 text-xs">• 1st</span>
+                            </div>
+                            <p class="text-xs text-slate-500">Principal Product Manager | AI & Autonomous Systems</p>
+                            <p class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                <span>1h • Edited •</span> <i class="fa-solid fa-earth-americas text-[10px]"></i>
+                            </p>
+                        </div>
+                    </div>
+                    <button class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-ellipsis"></i>
+                    </button>
+                </div>
+
+                <!-- Post Text Content with Simulated Fold -->
+                <div class="text-xs sm:text-sm text-slate-900 post-content-preview font-normal leading-relaxed mb-4">
+                    <span x-text="activePost ? activePost.content : ''"></span>
+                </div>
+
+                <!-- Social Proof Stats -->
+                <div class="flex items-center justify-between py-2.5 border-b border-slate-100 text-[11px] text-slate-500">
+                    <div class="flex items-center space-x-1">
+                        <span class="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px]"><i class="fa-solid fa-thumbs-up"></i></span>
+                        <span class="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px]"><i class="fa-solid fa-heart"></i></span>
+                        <span class="w-4 h-4 rounded-full bg-amber-500 text-white flex items-center justify-center text-[9px]"><i class="fa-solid fa-lightbulb"></i></span>
+                        <span class="ml-1 font-semibold text-slate-700">628</span>
+                    </div>
+                    <div class="space-x-2">
+                        <span>84 comments</span>
+                        <span>•</span>
+                        <span>27 reposts</span>
+                    </div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="grid grid-cols-4 gap-1 py-1.5 text-center text-xs font-semibold text-slate-600 border-b border-slate-100">
+                    <button class="py-2 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1.5">
+                        <i class="fa-regular fa-thumbs-up"></i> <span>Like</span>
+                    </button>
+                    <button class="py-2 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1.5">
+                        <i class="fa-regular fa-comment-dots"></i> <span>Comment</span>
+                    </button>
+                    <button class="py-2 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-repeat"></i> <span>Repost</span>
+                    </button>
+                    <button class="py-2 hover:bg-slate-100 rounded-lg flex items-center justify-center gap-1.5">
+                        <i class="fa-regular fa-paper-plane"></i> <span>Send</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <button @click="copyToClipboard(activePost.content)" class="text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-regular fa-copy"></i> Copy Post Text
+                </button>
+
+                <button @click="publishToLinkedIn(activePost)" class="text-xs font-semibold bg-linkedin-blue hover:bg-linkedin-dark text-white px-5 py-2.5 rounded-lg transition flex items-center gap-2 shadow-md shadow-blue-600/20">
+                    <i class="fa-brands fa-linkedin text-sm"></i> Open in LinkedIn Composer
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SIDE-BY-SIDE STUDIO EDITOR MODAL -->
+    <div x-show="showStudio" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/75 flex items-center justify-center p-3 sm:p-6 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-5xl w-full shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]" @click.away="showStudio = false">
+            
+            <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-linkedin-blue"></i>
+                    <h3 class="font-bold text-sm sm:text-base text-slate-900">Content Studio & Live Post Tuner</h3>
+                </div>
+                <button @click="showStudio = false" class="text-slate-400 hover:text-slate-700 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 overflow-y-auto flex-1">
+                
+                <!-- Left: Editor & Hook Generator -->
+                <div class="p-6 space-y-4 bg-white">
+                    <!-- Trend & Source Context Header -->
+                    <div class="bg-blue-50/80 border border-blue-200 rounded-xl p-3 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs shrink-0 shadow-sm">
+                                <i class="fa-solid fa-satellite-dish"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-[9px] uppercase font-extrabold text-blue-700 tracking-wider">Trend & Source Context</p>
+                                <p class="text-xs font-bold text-slate-900 truncate" x-text="activePost?.topic || 'Original Topic Context'"></p>
+                            </div>
+                        </div>
+                        <a :href="getPostSourceUrl(activePost)" target="_blank" class="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 shrink-0 bg-white px-2.5 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:border-blue-400">
+                            Source Article <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Hook (First 1-2 Lines):</label>
+                        <button @click="generateHookVariations()" :disabled="generatingHooks" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-wand-magic-sparkles" :class="{'fa-spin': generatingHooks}"></i>
+                            <span x-text="generatingHooks ? 'Generating...' : 'Suggest 3 Hooks'"></span>
+                        </button>
+                    </div>
+
+                    <!-- AI Suggested Hooks Dropdown / Badges -->
+                    <div x-show="suggestedHooks.length > 0" class="bg-blue-50 p-3 rounded-xl border border-blue-200 space-y-2">
+                        <p class="text-[11px] font-bold text-blue-900">Click a hook to use it:</p>
+                        <template x-for="h in suggestedHooks" :key="h">
+                            <div @click="editingPost.hook = h" class="text-xs text-blue-800 bg-white p-2 rounded-lg border border-blue-200 hover:border-blue-400 cursor-pointer transition shadow-sm" x-text="h"></div>
+                        </template>
+                    </div>
+
+                    <input type="text" x-model="editingPost.hook" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-linkedin-blue">
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Full LinkedIn Content:</label>
+                            <span class="text-[11px] font-mono" :class="editingPost.content.length > 3000 ? 'text-red-600 font-bold' : 'text-slate-400'" x-text="editingPost.content.length + ' / 3,000 chars'"></span>
+                        </div>
+                        <textarea x-model="editingPost.content" rows="12" class="w-full p-3 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-linkedin-blue font-sans leading-relaxed"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Hashtags:</label>
+                        <input type="text" x-model="editingPost.hashtags" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-linkedin-blue">
+                    </div>
+                </div>
+
+                <!-- Right: Real-Time Live Feed Card Preview -->
+                <div class="p-6 bg-slate-50 flex flex-col justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Live LinkedIn Preview:</p>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                                    PM
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-xs text-slate-900">Your Name</h4>
+                                    <p class="text-[11px] text-slate-400">1h • Edited • 🌐</p>
+                                </div>
+                            </div>
+                            <div class="post-content-preview text-xs text-slate-800 max-h-80 overflow-y-auto leading-relaxed" x-text="editingPost.content"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-slate-200 flex justify-end gap-2">
+                        <button @click="showStudio = false" class="px-4 py-2 text-xs text-slate-600 hover:bg-slate-200 rounded-lg">Cancel</button>
+                        <button @click="saveStudioPost()" class="px-5 py-2 text-xs font-semibold bg-linkedin-blue hover:bg-linkedin-dark text-white rounded-lg shadow-sm">Save Changes</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="toast.visible" x-cloak class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-medium px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-200 border border-slate-700 animate-in slide-in-from-bottom">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span x-text="toast.message"></span>
+    </div>
+
+    <!-- Alpine.js Application Logic -->
+    <script>
+        function agentDashboard() {
+            return {
+                activeTab: 'posts',
+                filterStatus: 'all',
+                searchFilter: '',
+                runningWorkflow: false,
+                researching: false,
+                repurposing: false,
+                generatingHooks: false,
+                draftingTopicId: null,
+                newlyCreatedPostId: null,
+                searchQuery: 'AI and product management developments',
+                repurposeUrl: '',
+                repurposeText: '',
+                repurposeResult: null,
+                showSimulator: false,
+                showStudio: false,
+                simMode: 'desktop',
+                activePost: null,
+                suggestedHooks: [],
+                editingPost: { id: null, hook: '', content: '', hashtags: '' },
+                metrics: {
+                    total: {{ metrics.total }},
+                    needs_review: {{ metrics.needs_review }},
+                    approved: {{ metrics.approved }},
+                    published: {{ metrics.published }}
+                },
+                posts: {{ posts | tojson | safe }},
+                topics: {{ topics | tojson | safe }},
+                toast: { visible: false, message: '' },
+
+                filteredPosts() {
+                    let list = this.posts;
+                    if (this.filterStatus !== 'all') {
+                        list = list.filter(p => p.status === this.filterStatus);
+                    }
+                    if (this.searchFilter.trim()) {
+                        const q = this.searchFilter.toLowerCase();
+                        list = list.filter(p => (p.topic || '').toLowerCase().includes(q) || (p.content || '').toLowerCase().includes(q));
+                    }
+                    return list;
+                },
+
+                showToast(msg) {
+                    this.toast.message = msg;
+                    this.toast.visible = true;
+                    setTimeout(() => { this.toast.visible = false; }, 3500);
+                },
+
+                formatDate(iso) {
+                    if (!iso) return '';
+                    const d = new Date(iso);
+                    return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                },
+
+                getArticleUrl(t) {
+                    if (!t) return 'https://news.google.com';
+                    if (t.id) return `/api/topics/${t.id}/source`;
+                    if (t.url && (t.url.includes('google.com/search') || t.url.includes('news.google.com') || t.url.includes('techcrunch.com') || t.url.includes('ycombinator.com'))) {
+                        return t.url;
+                    }
+                    const q = encodeURIComponent((t.title || 'AI Product Management') + ' ' + (t.source || ''));
+                    return `https://www.google.com/search?q=${q}`;
+                },
+
+                getPostSourceUrl(post) {
+                    if (!post) return 'https://news.google.com';
+                    if (post.id) return `/api/posts/${post.id}/source`;
+                    if (post.source_url && (post.source_url.startsWith('http://') || post.source_url.startsWith('https://'))) {
+                        return post.source_url;
+                    }
+                    const q = encodeURIComponent((post.topic || 'AI & Product Management') + ' news');
+                    return `https://www.google.com/search?q=${q}`;
+                },
+
+                async triggerWorkflow() {
+                    this.runningWorkflow = true;
+                    this.showToast('🚀 Running 6-step Monday Content Workflow...');
+                    try {
+                        const res = await fetch('/api/workflow/run', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ topic: this.searchQuery })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.showToast('✅ Workflow complete! Synced to Sheets & Notion.');
+                            setTimeout(() => { window.location.reload(); }, 1200);
+                        } else {
+                            alert('Workflow error: ' + (data.error || 'Failed'));
+                        }
+                    } catch (e) {
+                        alert('Error: ' + e);
+                    } finally {
+                        this.runningWorkflow = false;
+                    }
+                },
+
+                async updateStatus(postId, newStatus) {
+                    try {
+                        const res = await fetch(`/api/posts/${postId}/status`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ status: newStatus })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            const p = this.posts.find(item => item.id === postId);
+                            if (p) p.status = newStatus;
+                            this.recalcMetrics();
+                            this.showToast(`Post #${postId} marked as ${newStatus}`);
+                        }
+                    } catch (e) {
+                        alert('Error updating status: ' + e);
+                    }
+                },
+
+                async publishToLinkedIn(post) {
+                    this.showToast('Opening LinkedIn composer with pre-loaded post...');
+                    try {
+                        const res = await fetch(`/api/posts/${post.id}/publish`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'}
+                        });
+                        const data = await res.json();
+                        if (data.share_url) {
+                            window.open(data.share_url, '_blank');
+                        }
+                        post.status = 'published';
+                        this.recalcMetrics();
+                        this.showToast('Opened LinkedIn! Post marked as Published.');
+                    } catch (e) {
+                        alert('Publishing error: ' + e);
+                    }
+                },
+
+                async sendWhatsAppDigest() {
+                    this.showToast('Preparing WhatsApp review digest...');
+                    try {
+                        const res = await fetch('/api/whatsapp/send', { method: 'POST' });
+                        const data = await res.json();
+                        if (data.wa_me_link) {
+                            window.open(data.wa_me_link, '_blank');
+                            this.showToast('Opened WhatsApp with formatted review digest!');
+                        }
+                    } catch (e) {
+                        alert('Error sending WhatsApp: ' + e);
+                    }
+                },
+
+                async performResearch() {
+                    this.researching = true;
+                    try {
+                        const res = await fetch('/api/research', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ query: this.searchQuery, count: 5 })
+                        });
+                        const data = await res.json();
+                        if (data.topics) {
+                            this.topics = data.topics;
+                            this.showToast(`Analyzed ${data.topics.length} trending discussions!`);
+                        }
+                    } catch (e) {
+                        alert('Research error: ' + e);
+                    } finally {
+                        this.researching = false;
+                    }
+                },
+
+                async performRepurpose() {
+                    if (!this.repurposeUrl && !this.repurposeText) {
+                        alert('Please provide an article URL or paste text.');
+                        return;
+                    }
+                    this.repurposing = true;
+                    try {
+                        const res = await fetch('/api/repurpose', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ url: this.repurposeUrl, text: this.repurposeText })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.repurposeResult = data.result;
+                            this.showToast('Article transformed into 3 LinkedIn formats!');
+                        }
+                    } catch (e) {
+                        alert('Repurposing error: ' + e);
+                    } finally {
+                        this.repurposing = false;
+                    }
+                },
+
+                async draftFromTopic(topic) {
+                    this.draftingTopicId = topic.id || topic.title;
+                    const previewTitle = (topic.title || 'Trend').substring(0, 45);
+                    this.showToast(`Drafting post from trend: "${previewTitle}..."`);
+                    try {
+                        const endpoint = topic.id ? `/api/topics/${topic.id}/draft` : '/api/topics/draft';
+                        const res = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(topic)
+                        });
+                        const data = await res.json();
+                        if (data.success && data.post) {
+                            // Insert post at top of list
+                            this.posts.unshift(data.post);
+                            this.recalcMetrics();
+                            this.filterStatus = 'all';
+                            this.searchFilter = '';
+                            this.newlyCreatedPostId = data.post.id;
+                            
+                            // Instantly direct user to where post was created
+                            this.activeTab = 'posts';
+                            this.showToast('✅ Post created! Navigating to Content Studio...');
+                            
+                            // Automatically open Studio Editor with post context loaded
+                            setTimeout(() => {
+                                this.openStudio(data.post);
+                                const card = document.getElementById(`post-card-${data.post.id}`);
+                                if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 350);
+                        } else {
+                            alert('Drafting error: ' + (data.error || 'Failed to create post'));
+                        }
+                    } catch (e) {
+                        alert('Drafting error: ' + e);
+                    } finally {
+                        this.draftingTopicId = null;
+                    }
+                },
+
+                openSimulator(post) {
+                    this.activePost = post;
+                    this.showSimulator = true;
+                },
+
+                openStudio(post) {
+                    this.activePost = post;
+                    this.suggestedHooks = [];
+                    this.editingPost = {
+                        id: post.id,
+                        hook: post.hook,
+                        content: post.content,
+                        hashtags: post.hashtags
+                    };
+                    this.showStudio = true;
+                },
+
+                async generateHookVariations() {
+                    this.generatingHooks = true;
+                    try {
+                        const res = await fetch(`/api/posts/${this.editingPost.id}/generate-hooks`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'}
+                        });
+                        const data = await res.json();
+                        if (data.hooks) {
+                            this.suggestedHooks = data.hooks;
+                            this.showToast('Generated 3 viral hook variations!');
+                        }
+                    } catch (e) {
+                        alert('Error generating hooks: ' + e);
+                    } finally {
+                        this.generatingHooks = false;
+                    }
+                },
+
+                async saveStudioPost() {
+                    try {
+                        const res = await fetch(`/api/posts/${this.editingPost.id}/update`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                content: this.editingPost.content,
+                                hashtags: this.editingPost.hashtags,
+                                hook: this.editingPost.hook
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            const p = this.posts.find(item => item.id === this.editingPost.id);
+                            if (p) {
+                                p.content = this.editingPost.content;
+                                p.hashtags = this.editingPost.hashtags;
+                                p.hook = this.editingPost.hook;
+                                p.character_count = this.editingPost.content.length;
+                            }
+                            this.showStudio = false;
+                            this.showToast('Saved post changes.');
+                        }
+                    } catch (e) {
+                        alert('Error updating post: ' + e);
+                    }
+                },
+
+                copyToClipboard(text) {
+                    navigator.clipboard.writeText(text);
+                    this.showToast('Copied to clipboard!');
+                },
+
+                recalcMetrics() {
+                    this.metrics.total = this.posts.length;
+                    this.metrics.needs_review = this.posts.filter(p => p.status === 'needs_review').length;
+                    this.metrics.approved = this.posts.filter(p => p.status === 'approved').length;
+                    this.metrics.published = this.posts.filter(p => p.status === 'published').length;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
