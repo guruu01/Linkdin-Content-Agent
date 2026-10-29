@@ -120,8 +120,18 @@ async def index_page(request: Request):
 
 # API Endpoints
 @app.api_route("/api/workflow/run", methods=["GET", "POST"])
-async def run_workflow(req: Optional[WorkflowRunRequest] = None):
-    topic = (req.topic if req else None) or settings.DEFAULT_TOPIC
+async def run_workflow(request: Request):
+    topic = None
+    if request.method == "POST":
+        try:
+            body = await request.json()
+            if isinstance(body, dict):
+                topic = body.get("topic")
+        except Exception:
+            pass
+    if not topic:
+        topic = request.query_params.get("topic") or settings.DEFAULT_TOPIC
+
     host = f"http://{settings.APP_HOST}:{settings.APP_PORT}"
     try:
         result = workflow_manager.run_weekly_workflow(topic_query=topic, host_url=host)

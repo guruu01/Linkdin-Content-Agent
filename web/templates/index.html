@@ -945,10 +945,10 @@
                             this.showToast('✅ Workflow complete! Synced to Sheets & Notion.');
                             setTimeout(() => { window.location.reload(); }, 1200);
                         } else {
-                            alert('Workflow error: ' + (data.error || 'Failed'));
+                            alert('Workflow error: ' + (data.error || data.detail || 'Workflow execution failed'));
                         }
                     } catch (e) {
-                        alert('Error: ' + e);
+                        alert('Workflow error: ' + e);
                     } finally {
                         this.runningWorkflow = false;
                     }
