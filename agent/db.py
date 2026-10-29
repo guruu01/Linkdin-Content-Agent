@@ -103,6 +103,23 @@ def init_db():
     )
     """)
 
+    # Seed default topics if fresh database (e.g. serverless instance)
+    try:
+        cursor.execute("SELECT COUNT(*) FROM topics")
+        if cursor.fetchone()[0] == 0:
+            now = datetime.now().isoformat()
+            sample_topics = [
+                ("AI and product management developments", "Agentic AI in Product Management: The Autonomous Roadmap", "MIT Sloan Management Review", "https://www.google.com/search?q=Agentic+AI+in+Product+Management", "Explores how autonomous agents are shifting product managers from feature managers to systems architects.", json.dumps(["Will agents replace sprint planning?", "How does product intuition translate to system prompts?", "The shift from output metrics to system reliability"]), 9.6, now),
+                ("AI and product management developments", "AI Feature Bloat: Why 73% of Generative Add-ons Go Unused", "VentureBeat", "https://www.google.com/search?q=AI+Feature+Bloat+SaaS", "Examines customer fatigue with superficial AI wrappers and the demand for embedded, outcome-based automation.", json.dumps(["Chatbots vs Background automations", "The ROI of generative features in B2B SaaS", "How users actually interact with AI tools"]), 9.4, now),
+                ("AI and product management developments", "The Rise of the 'Product Engineer' and the Blurring of PM/Dev Lines", "Andreessen Horowitz", "https://www.google.com/search?q=Product+Engineer+PM+Developer+Lines", "AI code assistants like Cursor are enabling engineers to build full user experiences without heavy PM specifications.", json.dumps(["Does the PM role become more technical or more business-oriented?", "The collapse of the spec-writing loop", "Rapid prototyping replacing user research decks"]), 9.2, now)
+            ]
+            cursor.executemany("""
+                INSERT INTO topics (query, title, source, url, summary, discussion_points, trending_score, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, sample_topics)
+    except Exception:
+        pass
+
     conn.commit()
     conn.close()
 

@@ -1,3 +1,4 @@
+import os
 import logging
 import urllib.parse
 from pathlib import Path
@@ -35,11 +36,12 @@ TEMPLATES_DIR = WEB_DIR / "templates"
 TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
-# Start background scheduler
-try:
-    init_scheduler()
-except Exception as e:
-    logger.warning(f"Scheduler init note: {e}")
+# Start background scheduler (only in persistent environments; Vercel uses Vercel Cron)
+if not os.getenv("VERCEL") and not os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+    try:
+        init_scheduler()
+    except Exception as e:
+        logger.warning(f"Scheduler init note: {e}")
 
 # Request Models
 class WorkflowRunRequest(BaseModel):
@@ -113,9 +115,9 @@ async def index_page(request: Request):
     )
 
 # API Endpoints
-@app.post("/api/workflow/run")
-async def run_workflow(req: WorkflowRunRequest):
-    topic = req.topic or settings.DEFAULT_TOPIC
+@app.api_route("/api/workflow/run", methods=["GET", "POST"])
+async def run_workflow(req: Optional[WorkflowRunRequest] = None):
+    topic = (req.topic if req else None) or settings.DEFAULT_TOPIC
     host = f"http://{settings.APP_HOST}:{settings.APP_PORT}"
     try:
         result = workflow_manager.run_weekly_workflow(topic_query=topic, host_url=host)
