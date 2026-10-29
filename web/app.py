@@ -68,6 +68,10 @@ class GenerateHooksRequest(BaseModel):
     post_id: int
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/api", response_class=HTMLResponse)
+@app.get("/api/", response_class=HTMLResponse)
+@app.get("/api/index", response_class=HTMLResponse)
+@app.get("/api/index.py", response_class=HTMLResponse)
 async def index_page(request: Request):
     posts = get_posts(limit=50)
     topics = get_recent_topics(limit=12)
