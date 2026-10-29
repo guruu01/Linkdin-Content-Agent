@@ -1,5 +1,6 @@
 import os
 import logging
+import traceback
 import urllib.parse
 from pathlib import Path
 from fastapi import FastAPI, Request, BackgroundTasks, Form, HTTPException
@@ -137,8 +138,8 @@ async def run_workflow(request: Request):
         result = workflow_manager.run_weekly_workflow(topic_query=topic, host_url=host)
         return {"success": True, "result": result}
     except Exception as e:
-        logger.error(f"Workflow error: {e}")
-        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+        logger.error(f"Workflow error: {e}\n{traceback.format_exc()}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e), "trace": traceback.format_exc()})
 
 @app.get("/api/posts")
 async def list_posts(status: Optional[str] = None):
@@ -253,49 +254,53 @@ async def draft_post_from_topic_endpoint(topic_id: int):
     Drafts a single dedicated post directly from a selected topic card,
     then automatically links context and syncs.
     """
-    topic = get_topic_by_id(topic_id)
-    if not topic:
-        raise HTTPException(status_code=404, detail="Topic not found")
-    
-    discussion = topic.get("discussion_points", [])
-    if isinstance(discussion, list):
-        takeaway = "; ".join(discussion)
-    else:
-        takeaway = str(discussion)
-
-    url = topic.get("url", "").strip()
-    if not url or "example.com" in url:
-        query = f"{topic.get('title', '')} {topic.get('source', '')}".strip()
-        url = f"https://www.google.com/search?q={urllib.parse.quote_plus(query)}"
-
-    idea = {
-        "id": None,
-        "topic_id": topic_id,
-        "source_url": url,
-        "topic_title": topic.get("title", "Industry Trend"),
-        "title": topic.get("title", "Industry Trend"),
-        "angle": "The Tactical Framework",
-        "hook_premise": topic.get("summary", ""),
-        "key_takeaway": takeaway,
-        "target_audience": "Product Managers, Founders & Tech Leaders"
-    }
-
-    post = drafter.draft_post(idea, tone="tactical_pm")
-    post["source_url"] = url
-    post["topic_id"] = topic_id
-
-    # Background sync
     try:
-        sheets_client.sync_post(post)
-        notion_client.sync_post(post)
-    except Exception as e:
-        logger.warning(f"Sync note: {e}")
+        topic = get_topic_by_id(topic_id)
+        if not topic:
+            raise HTTPException(status_code=404, detail="Topic not found")
+        
+        discussion = topic.get("discussion_points", [])
+        if isinstance(discussion, list):
+            takeaway = "; ".join(discussion)
+        else:
+            takeaway = str(discussion)
 
-    return {
-        "success": True,
-        "post": post,
-        "message": f"Successfully drafted post for '{topic.get('title')}'!"
-    }
+        url = topic.get("url", "").strip()
+        if not url or "example.com" in url:
+            query = f"{topic.get('title', '')} {topic.get('source', '')}".strip()
+            url = f"https://www.google.com/search?q={urllib.parse.quote_plus(query)}"
+
+        idea = {
+            "id": None,
+            "topic_id": topic_id,
+            "source_url": url,
+            "topic_title": topic.get("title", "Industry Trend"),
+            "title": topic.get("title", "Industry Trend"),
+            "angle": "The Tactical Framework",
+            "hook_premise": topic.get("summary", ""),
+            "key_takeaway": takeaway,
+            "target_audience": "Product Managers, Founders & Tech Leaders"
+        }
+
+        post = drafter.draft_post(idea, tone="tactical_pm")
+        post["source_url"] = url
+        post["topic_id"] = topic_id
+
+        # Background sync
+        try:
+            sheets_client.sync_post(post)
+            notion_client.sync_post(post)
+        except Exception as e:
+            logger.warning(f"Sync note: {e}")
+
+        return {
+            "success": True,
+            "post": post,
+            "message": f"Successfully drafted post for '{topic.get('title')}'!"
+        }
+    except Exception as e:
+        logger.error(f"Draft error: {e}\n{traceback.format_exc()}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e), "trace": traceback.format_exc()})
 
 @app.post("/api/topics/draft")
 async def draft_post_from_topic_custom(req: Dict[str, Any]):
